@@ -1,0 +1,1 @@
+# python file with definitions of the main project class GradeDB with access methods to the database. (.py)

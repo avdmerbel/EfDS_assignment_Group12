@@ -1,0 +1,1 @@
+-- a text file with SQL code creating the database tables according to the schema in schema.pdf (.sql)
