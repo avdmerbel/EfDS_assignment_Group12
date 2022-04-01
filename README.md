@@ -1,9 +1,9 @@
 # Essentials for Data Science - SQL Assignment
 # Group 12
 
-Toby Hackmann       - S
-Felix Wente         - S
-Anka van de Merbel  - S3478912
+- Toby Hackmann       - S
+- Felix Wente         - S
+- Anka van de Merbel  - S3478912
 
 ### Included in this repository:
 
