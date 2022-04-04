@@ -2,7 +2,7 @@
 # Group 12
 
 - Toby Hackmann       - S
-- Felix Wente         - S
+- Felix Wente         - S3337731
 - Anka van de Merbel  - S3478912
 
 ### Included in this repository:
