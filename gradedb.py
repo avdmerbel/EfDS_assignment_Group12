@@ -55,6 +55,12 @@ class Evaluation:
   def __repr__(self):
     return "Evaluation(EvaluationID='%s')" % (self.EvaluationID)
 
+class TaskQuestionLink(Base):
+  __tablename__ = "taskquestionLink"
+
+  QuestionId = Column(Integer, ForeignKey("QuestionId"), primary_key=True)
+  TaskId = Column(Integer, ForeignKey("TaskId"), primary_key=True)
+
 class Task(Base):
   __tablename__ = "tasks"
 
@@ -62,12 +68,6 @@ class Task(Base):
   Title = Column(String(200))
   Text = Column(String(400))
   Questions = relationship("Question", secondary=TaskQuestionLink)
-
-class TaskQuestionLink(Base):
-  __tablename__ = "taskquestionLink"
-
-  QuestionId = Column(Integer, ForeignKey("QuestionId"), primary_key=True)
-  TaskId = Column(Integer, ForeignKey("TaskId"), primary_key=True)
 
 class Answer(Base):
   __tablename__ = "answers"
