@@ -12,9 +12,10 @@ Base = declarative_base() # normally present once in a script!
 class Student:
   __tablename__ = "Students"
   
-  UniversityID = Column(Integer, primary_key = True)
+  StudentID = Column(Integer, primary_key = True)
   Name = Column(String(160))
   Email = Column(String(200))
+  UniversityID = Column(Integer)
   
   def __repr__(self):
     return "Student(UniversityId='%s', Name='%s', Email='%s')" % (self.UniversityID, self.Name, self.Email)
@@ -94,7 +95,7 @@ class GradeDB:
   def newSession(self):
     return self._sessionMaker()
 
-  def addStudent(self, name, email):
+  def addStudent(self, name, email, unid):
     if (not name or not (type(name) == str)):
       print('This is not a valid name.')
       return
@@ -102,18 +103,18 @@ class GradeDB:
       print('This is not a valid email address.')
       return
     with self.newSession() as ses:
-      stud = Student(Name = name, Email = email)
+      stud = Student(Name = name, Email = email, UniversityID = unid)
       ses.add( stud )
       ses.commit()
       return
   
   def addQuestion(self, title, text):
     if (not title or not (type(title) == str)):
-      print('This is not a valid name.')
+      print('This is not a valid title.')
       return
-    elif ( not text or not (type(text) == str)):
-      print('This is not a valid question.')
-      return
+    #elif ( not text or not (type(text) == str)):
+      #print('This is not a valid question.')
+      #return
     with self.newSession() as ses:
       nq = Question(Title = title, Text = text)
       ses.add( nq )
