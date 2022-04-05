@@ -1,5 +1,5 @@
 # python file with definitions of the main project class GradeDB with access methods to the database. (.py)
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
