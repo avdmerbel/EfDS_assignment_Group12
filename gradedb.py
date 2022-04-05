@@ -9,43 +9,44 @@ Base = declarative_base() # normally present once in a script!
 # Student, Question, Task, Assignment, Submission, 
 # Answer, EvaluationRequest, Evaluation, Score
 
-class Student:
+class Student(Base):
   __tablename__ = "Students"
   
-  StudentID = Column(Integer, primary_key = True)
+  UniversityID = Column(Integer, primary_key = True)
   Name = Column(String(160))
   Email = Column(String(200))
-  UniversityID = Column(Integer)
+  #UniversityID = Column(Integer)
   
   def __repr__(self):
-    return "Student(UniversityId='%s', Name='%s', Email='%s')" % (self.UniversityID, self.Name, self.Email)
+    return "Student(UniversityID='%s', Name='%s', Email='%s')" % (self.UniversityID, self.Name, self.Email)
 
-class Question:
+class Question(Base):
   __tablename__ = "Questions"
   
   QuestionID = Column(Integer, primary_key = True)
   Title = Column(String(160))
   Text = Column(String(300))
+  Assignment = relationship("Assignment", backref="Student")
   
   def __repr__(self):
     return "Question(QuestionID='%s', Title='%s', Text='%s')" % (self.QuestionID, self.Title, self.Text)
   
-class Assignment:
+class Assignment(Base):
   __tablename__ = "Assignments"
   
   AssignmentID = Column(Integer, primary_key = True)
   UniversityID = Column(ForeignKey('Students.UniversityID'), nullable=False)
   TaskID = Column(ForeignKey('Tasks.TaskID'), nullable=False)
-  Submissions = relationship("Submission", backref="Assignments")
+  Submissions = relationship("Submission", backref="Assignment")
 
-class Submission:
+class Submission(Base):
   __tablename__ = "Submissions"
   
   SubmissionID = Column(Integer, primary_key = True)
   AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
-  Answers = relationship("Answer", backref = "Submissions")
+  Answers = relationship("Answer", backref = "Submission")
   
-class Evaluation:
+class Evaluation(Base):
   __tablename__ = "Evaluations"
   
   EvaluationID = Column(Integer, primary_key = True)
@@ -59,32 +60,32 @@ class Evaluation:
 class TaskQuestionLink(Base):
   __tablename__ = "taskquestionLink"
 
-  QuestionId = Column(Integer, ForeignKey("QuestionId"), primary_key=True)
-  TaskId = Column(Integer, ForeignKey("TaskId"), primary_key=True)
+  QuestionID = Column(Integer, ForeignKey("QuestionID"), primary_key=True)
+  TaskID = Column(Integer, ForeignKey("TaskID"), primary_key=True)
 
 class Task(Base):
-  __tablename__ = "tasks"
+  __tablename__ = "Tasks"
 
-  TaskId = Column(Integer, primary_key = True)
+  TaskID = Column(Integer, primary_key = True)
   Title = Column(String(200))
   Text = Column(String(400))
   Questions = relationship("Question", secondary=TaskQuestionLink)
 
 class Answer(Base):
-  __tablename__ = "answers"
+  __tablename__ = "Answers"
 
-  AnswerId = Column(Integer, primary_key=True)
+  AnswerID = Column(Integer, primary_key=True)
   Text = Column(String(400))
-  QuestionId = Column(ForeignKey("questions.QuestionId"), nullable=False)
-  SubmissionId = Column(ForeignKey("submissions.SubmissionId"), nullable=False)
+  QuestionID = Column(ForeignKey("Questions.QuestionID"), nullable=False)
+  SubmissionID = Column(Integer, ForeignKey("Submissions.SubmissionID"), nullable=False)
 
 class Score(Base):
-  __tablename__ = "scores"
+  __tablename__ = "Scores"
 
-  ScoreId = Column(Integer, primary_key=True)
+  ScoreID = Column(Integer, primary_key=True)
   Value = Column(Float)
-  EvaluationId = Column(ForeignKey("evaluations.EvaluationId"), nullable = False)
-  AnswerId = Column(ForeignKey("answers.AnswerId"), nullable = False)
+  EvaluationID = Column(ForeignKey("Evaluations.EvaluationID"), nullable = False)
+  AnswerID = Column(ForeignKey("Answers.AnswerID"), nullable = False)
 
 class GradeDB:
   def __init__(self, fileName):
