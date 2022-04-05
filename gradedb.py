@@ -9,6 +9,52 @@ Base = declarative_base() # normally present once in a script!
 # Student, Question, Task, Assignment, Submission, 
 # Answer, EvaluationRequest, Evaluation, Score
 
+class Student:
+  __tablename__ = "Students"
+  
+  UniversityID = Column(Integer, primary_key = True)
+  Name = Column(String(160))
+  Email = Column(String(200))
+  
+  def __repr__(self):
+    return "Student(UniversityId='%s', Name='%s', Email='%s')" % (self.UniversityID, self.Name, self.Email)
+
+class Question:
+  __tablename__ = "Questions"
+  
+  QuestionID = Column(Integer, primary_key = True)
+  Title = Column(String(160))
+  Text = Column(String(300))
+  
+  def __repr__(self):
+    return "Question(QuestionID='%s', Title='%s', Text='%s')" % (self.QuestionID, self.Title, self.Text)
+  
+class Assignment:
+  __tablename__ = "Assignments"
+  
+  AssignmentID = Column(Integer, primary_key = True)
+  UniversityID = Column(ForeignKey('Students.UniversityID'), nullable=False)
+  TaskID = Column(ForeignKey('Tasks.TaskID'), nullable=False)
+  Submissions = relationship("Submission", backref="Assignments")
+
+class Submission:
+  __tablename__ = "Submissions"
+  
+  SubmissionID = Column(Integer, primary_key = True)
+  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
+  Answers = relationship("Answer", backref = "Submissions")
+  
+class Evaluation:
+  __tablename__ = "Evaluations"
+  
+  EvaluationID = Column(Integer, primary_key = True)
+  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
+  Assignment = relationship("Assignment", backref = "Evaluation")
+  Scores = relationship("Score", backref = "Evaluation")
+  
+  def __repr__(self):
+    return "Evaluation(EvaluationID='%s')" % (self.EvaluationID)
+
 class Task(Base):
   __tablename__ = "tasks"
 
@@ -47,6 +93,19 @@ class GradeDB:
     
   def newSession(self):
     return self._sessionMaker()
+
+  def addStudent(self, name, email):
+    if (not name or not (type(name) == str)):
+      print('This is not a valid name.')
+      return
+    elif ( not email or not (type(email) == str)):
+      print('This is not a valid email address.')
+      return
+    with self.newSession() as ses:
+      stud = Student(Name = name, Email = email)
+      ses.add( stud )
+      ses.commit()
+      return
   
   def addQuestion(self, title, text):
     if (not title or not (type(title) == str)):
@@ -67,6 +126,13 @@ class GradeDB:
       ses.add(nt)
       ses.commit()
       return 
+    
+  def addAssignment(self, student, task):
+    with self.newSession() as ses:
+      assign = Assignment( )
+      ses.add( assign )
+      ses.commit()
+      return
     
   def newSubmission(self, assignment):
     with self.newSession() as ses:
