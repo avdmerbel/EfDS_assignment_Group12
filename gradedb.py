@@ -40,5 +40,3 @@ class GradeDB:
       ses.add( eva )
       ses.commit()
       return
-
-# test
