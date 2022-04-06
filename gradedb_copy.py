@@ -1,5 +1,5 @@
 # python file with definitions of the main project class GradeDB with access methods to the database. (.py)
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float, Table
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -20,41 +20,33 @@ class Student(Base):
   def __repr__(self):
     return "Student(UniversityID='%s', Name='%s', Email='%s')" % (self.UniversityID, self.Name, self.Email)
 
+
+TaskQuestionLink = Table('TaskQuestionLink', Base.metadata,
+    Column('QuestionID', ForeignKey('Questions.QuestionID'), primary_key=True),
+    Column('TaskID', ForeignKey('Tasks.TaskID'), primary_key=True)
+)
+
 class Question(Base):
   __tablename__ = "Questions"
   
   QuestionID = Column(Integer, primary_key = True)
   Title = Column(String(160))
   Text = Column(String(300))
-  
+  Answers = relationship("Answer", backref = "Question")
+  Tasks = relationship("Task", secondary = TaskQuestionLink, back_populates = "Questions")
+
   def __repr__(self):
     return "Question(QuestionID='%s', Title='%s', Text='%s')" % (self.QuestionID, self.Title, self.Text)
-  
-class Assignment(Base):
-  __tablename__ = "Assignments"
-  
-  AssignmentID = Column(Integer, primary_key = True)
-  UniversityID = Column(ForeignKey('Students.UniversityID'), nullable=False)
-  TaskID = Column(ForeignKey('Task.TaskID'), nullable=False)
-  Submissions = relationship("Submission", backref="Assignment")
 
-class Submission(Base):
-  __tablename__ = "Submissions"
-  
-  SubmissionID = Column(Integer, primary_key = True)
-  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
-  Answers = relationship("Answer", backref = "Submission")
-  
-# class Evaluation(Base):
-#   __tablename__ = "Evaluations"
-  
-#   EvaluationID = Column(Integer, primary_key = True)
-#   AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
-#   Assignment = relationship("Assignment", backref = "Evaluation")
-#   Scores = relationship("Score", backref = "Evaluation")
-  
-#   def __repr__(self):
-#     return "Evaluation(EvaluationID='%s')" % (self.EvaluationID)
+class Task(Base):
+  __tablename__ = "Tasks"
+
+  TaskID = Column(Integer, primary_key = True)
+  Title = Column(String(200))
+  Text = Column(String(400))
+  Assignments = relationship( "Assignment", backref ='task')
+  Questions = relationship("Question", secondary=TaskQuestionLink, back_populates = "Tasks")  
+
 
 # class TaskQuestionLink(Base):
 #   __tablename__ = "taskquestionLink"
@@ -62,29 +54,50 @@ class Submission(Base):
 #   QuestionID = Column(Integer, ForeignKey("QuestionID"), primary_key=True)
 #   TaskID = Column(Integer, ForeignKey("TaskID"), primary_key=True)
 
-# class Task(Base):
-#   __tablename__ = "Tasks"
+class Assignment(Base):
+  __tablename__ = "Assignments"
+  
+  AssignmentID = Column(Integer, primary_key = True)
+  UniversityID = Column(ForeignKey('Students.UniversityID'), nullable=False)
+  TaskID = Column(ForeignKey('Tasks.TaskID'), nullable=False)
+  Submissions = relationship("Submission", backref="Assignments")
+  Students = relationship("Student", backref = "Assignemtns")
 
-#   TaskID = Column(Integer, primary_key = True)
-#   Title = Column(String(200))
-#   Text = Column(String(400))
-#   Questions = relationship("Question", secondary=TaskQuestionLink)
+class Submission(Base):
+  __tablename__ = "Submissions"
+  
+  SubmissionID = Column(Integer, primary_key = True)
+  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
+  Answers = relationship("Answer", backref = "Submissions")
+  
+class Evaluation(Base):
+  __tablename__ = "Evaluations"
+  
+  EvaluationID = Column(Integer, primary_key = True)
+  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
+  Assignment = relationship("Assignment", backref = "Evaluation")
+  Scores = relationship("Score", backref = "Evaluation")
+  
+  def __repr__(self):
+    return "Evaluation(EvaluationID='%s')" % (self.EvaluationID)
 
-# class Answer(Base):
-#   __tablename__ = "Answers"
 
-#   AnswerID = Column(Integer, primary_key=True)
-#   Text = Column(String(400))
-#   QuestionID = Column(ForeignKey("Questions.QuestionID"), nullable=False)
-#   SubmissionID = Column(Integer, ForeignKey("Submissions.SubmissionID"), nullable=False)
 
-# class Score(Base):
-#   __tablename__ = "Scores"
+class Answer(Base):
+  __tablename__ = "Answers"
 
-#   ScoreID = Column(Integer, primary_key=True)
-#   Value = Column(Float)
-#   EvaluationID = Column(ForeignKey("Evaluations.EvaluationID"), nullable = False)
-#   AnswerID = Column(ForeignKey("Answers.AnswerID"), nullable = False)
+  AnswerID = Column(Integer, primary_key=True)
+  Text = Column(String(400))
+  QuestionID = Column(ForeignKey("Questions.QuestionID"), nullable=False)
+  SubmissionID = Column(Integer, ForeignKey("Submissions.SubmissionID"), nullable=False)
+
+class Score(Base):
+  __tablename__ = "Scores"
+
+  ScoreID = Column(Integer, primary_key=True)
+  Value = Column(Float)
+  EvaluationID = Column(ForeignKey("Evaluations.EvaluationID"), nullable = False)
+  AnswerID = Column(ForeignKey("Answers.AnswerID"), nullable = False)
 
 class GradeDB:
   def __init__(self, fileName):
