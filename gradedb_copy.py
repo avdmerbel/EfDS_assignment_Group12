@@ -121,64 +121,64 @@ class GradeDB:
       ses.commit()
       return 
   
-  # def addQuestion(self, title, text):
-  #   if (not title or not (type(title) == str)):
-  #     print('This is not a valid title.')
-  #     return
-  #   #elif ( not text or not (type(text) == str)):
-  #     #print('This is not a valid question.')
-  #     #return
-  #   with self.newSession() as ses:
-  #     nq = Question(Title = title, Text = text)
-  #     ses.add( nq )
-  #     ses.commit()
-  #     return
+  def addQuestion(self, title, text):
+    if (not title or not (type(title) == str)):
+      print('This is not a valid title.')
+      return
+    #elif ( not text or not (type(text) == str)):
+      #print('This is not a valid question.')
+      #return
+    with self.newSession() as ses:
+      nq = Question(Title = title, Text = text)
+      ses.add( nq )
+      ses.commit()
+      return
 
-  # def addTask(self, title, text, questions):
-  #   with self.newSession() as ses:
-  #     nt = Task(Title = title, Text = text, Questions = questions)
-  #     ses.add(nt)
-  #     ses.commit()
-  #     return 
+  def addTask(self, title, text, questions):
+    with self.newSession() as ses:
+      nt = Task(Title = title, Text = text, Questions = questions)
+      ses.add(nt)
+      ses.commit()
+      return 
     
-  # def addAssignment(self, student, task):
-  #   with self.newSession() as ses:
-  #     assign = Assignment( )
-  #     ses.add( assign )
-  #     ses.commit()
-  #     return
+  def addAssignment(self, student, task):
+    with self.newSession() as ses:
+      assign = Assignment( )
+      ses.add( assign )
+      ses.commit()
+      return
     
-  # def newSubmission(self, assignment):
-  #   with self.newSession() as ses:
-  #     sub = Submission( Assignment = assignment )
-  #     ses.add( sub )
-  #     ses.commit()
-  #     return
+  def newSubmission(self, assignment):
+    with self.newSession() as ses:
+      sub = Submission( Assignment = assignment )
+      ses.add( sub )
+      ses.commit()
+      return
 
-  # def addAnswer(self, answer):
-  #   with self.newSession() as ses:
-  #     ans = Answer(Answer = answer)
-  #     ses.add(ans)
-  #     ses.commit()
-  #     return
+  def addAnswer(self, answer):
+    with self.newSession() as ses:
+      ans = Answer(Answer = answer)
+      ses.add(ans)
+      ses.commit()
+      return
 
-  # def commitSubmission(self):
-  #   with self.newSession() as ses:
-  #     er = EvaluationRequest()
-  #     ses.add(er)
-  #     ses.commit()
-  #     return
+  def commitSubmission(self):
+    with self.newSession() as ses:
+      er = EvaluationRequest()
+      ses.add(er)
+      ses.commit()
+      return
 
-  # def newEvaluation(self, request ):
-  #   with self.newSession() as ses:
-  #     eva= Evaluation( EvaluationRequest = request )
-  #     ses.add( eva )
-  #     ses.commit()
-  #     return
+  def newEvaluation(self, request ):
+    with self.newSession() as ses:
+      eva= Evaluation( EvaluationRequest = request )
+      ses.add( eva )
+      ses.commit()
+      return
 
-  # def addScore(self, score):
-  #   with self.newSession() as ses:
-  #     sc = Score(Score = score)
-  #     ses.add(sc)
-  #     ses.commit()
-  #     return
+  def addScore(self, score):
+    with self.newSession() as ses:
+      sc = Score(Score = score)
+      ses.add(sc)
+      ses.commit()
+      return
