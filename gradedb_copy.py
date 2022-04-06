@@ -45,7 +45,10 @@ class Task(Base):
   Title = Column(String(200))
   Text = Column(String(400))
   Assignments = relationship( "Assignment", backref ='task')
-  Questions = relationship("Question", secondary=TaskQuestionLink, back_populates = "Tasks")  
+  Questions = relationship("Question", secondary=TaskQuestionLink, back_populates = "Tasks") 
+
+  def __repr__(self):
+    return "Task(TaskID='%s', Title='%s', Text='%s')" % (self.TaskID, self.Title, self.Text) 
 
 
 # class TaskQuestionLink(Base):
@@ -136,14 +139,17 @@ class GradeDB:
 
   def addTask(self, title, text, questions):
     with self.newSession() as ses:
-      nt = Task(Title = title, Text = text, Questions = questions)
+      qs = ses.query(Question).filter(Question.QuestionID == questions).all()
+      nt = Task(Title = title, Text = text)
+      nt.Question = qs
       ses.add(nt)
       ses.commit()
       return 
     
   def addAssignment(self, student, task):
     with self.newSession() as ses:
-      assign = Assignment( )
+      ts = ses.query(Task).filter(Task.TaskID == task).one()
+      assign = Assignment(UniversityID = student, TaskID = task )
       ses.add( assign )
       ses.commit()
       return
