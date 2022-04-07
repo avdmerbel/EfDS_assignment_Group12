@@ -139,7 +139,7 @@ class GradeDB:
 
   def addTask(self, title, text, questions):
     with self.newSession() as ses:
-      qs = ses.query(Question).filter(Question.QuestionID == questions).all()
+      qs = ses.query(Question).filter(Question.Title.in_(questions)).all()
       nt = Task(Title = title, Text = text)
       nt.Question = qs
       ses.add(nt)
@@ -148,22 +148,29 @@ class GradeDB:
     
   def addAssignment(self, student, task):
     with self.newSession() as ses:
-      ts = ses.query(Task).filter(Task.TaskID == task).one()
-      assign = Assignment(UniversityID = student, TaskID = task )
+      ts = ses.query(Task).filter(Task.Title == task).one()
+      assign = Assignment(UniversityID = student, TaskID = ts.TaskID)
+      assign.Task = ts
       ses.add( assign )
       ses.commit()
       return
     
-  def newSubmission(self, assignment):
+  def newSubmission(self, student):
     with self.newSession() as ses:
-      sub = Submission( Assignment = assignment )
+      sm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
+      sub = Submission( AssignmentID = sm.AssignmentID )
+      sub.Student = student
       ses.add( sub )
       ses.commit()
       return
 
-  def addAnswer(self, answer):
+  def addAnswer(self, student, answer, ques):
     with self.newSession() as ses:
-      ans = Answer(Answer = answer)
+      asm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
+      
+      qu = ses.query(Question).filter(Question.Title == ques ).one()
+      #ts = ses.query(Assignment).filter(Assignment == sm.SubmissionID).one()
+      ans = Answer(Text = answer, SubmissionID = sm.SubmissionID, QuestionID = qu.QuestionID )
       ses.add(ans)
       ses.commit()
       return
