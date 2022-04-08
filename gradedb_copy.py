@@ -1,5 +1,6 @@
 # python file with definitions of the main project class GradeDB with access methods to the database. (.py)
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float, Table
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float, Table, Boolean, update, DateTime 
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -72,6 +73,8 @@ class Submission(Base):
   SubmissionID = Column(Integer, primary_key = True)
   AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
   Answers = relationship("Answer", backref = "Submissions")
+  EvaluationRequest = Column(Boolean)
+  SubmissionTime = Column(DateTime)
   
 class Evaluation(Base):
   __tablename__ = "Evaluations"
@@ -158,27 +161,25 @@ class GradeDB:
   def newSubmission(self, student):
     with self.newSession() as ses:
       sm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
-      sub = Submission( AssignmentID = sm.AssignmentID )
+      sub = Submission( AssignmentID = sm.AssignmentID, EvaluationRequest = False, SubmissionTime = datetime.now())
       sub.Student = student
       ses.add( sub )
       ses.commit()
       return
 
-  def addAnswer(self, student, answer, ques):
+  def addAnswer(self, student, answer, question):
     with self.newSession() as ses:
       asm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
-      
-      qu = ses.query(Question).filter(Question.Title == ques ).one()
-      #ts = ses.query(Assignment).filter(Assignment == sm.SubmissionID).one()
-      ans = Answer(Text = answer, SubmissionID = sm.SubmissionID, QuestionID = qu.QuestionID )
+      sbm = ses.query(Submission).filter(Submission.AssignmentID == asm.AssignmentID).one()
+      qu = ses.query(Question).filter(Question.Title == question).one()
+      ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = qu.QuestionID)
       ses.add(ans)
       ses.commit()
       return
 
-  def commitSubmission(self):
+  def commitSubmission(self, SubmissionID):
     with self.newSession() as ses:
-      er = EvaluationRequest()
-      ses.add(er)
+      ses.query(Submission).filter(Submission.SubmissionID == SubmissionID).update({'EvaluationRequest': 1})
       ses.commit()
       return
 
