@@ -1,4 +1,5 @@
 # python file with definitions of the main project class GradeDB with access methods to the database. (.py)
+from audioop import avg
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float, Table, Boolean, update, DateTime 
 from sqlalchemy.orm import relationship, sessionmaker
@@ -210,7 +211,7 @@ class GradeDB:
       ses.commit()
       return
 
-  def finishEvaluation( self, evaluation ):
+  def commitEvaluation( self, evaluation ):
     with self.newSession() as ses:
       eval = ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).one()
       if (eval.EvaluationFinished == 1):
@@ -218,9 +219,12 @@ class GradeDB:
         return
       else:
         ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).update({'EvaluationFinished': 1})
+        ses.query(Submission).filter(Submission.SubmissionID == eval.SubmissionID).update({'EvaluationRequest': 0})
         sub = ses.query(Submission).filter(Submission.SubmissionID == eval.SubmissionID).one()
         ass = ses.query(Assignment).filter(Assignment.AssignmentID == sub.AssignmentID).one()
         stud = ses.query(Student).filter(Student.UniversityID == ass.UniversityID).one()
-        print("Sent an email to address: " + stud.Email + ". The average grade of the assignment was: " + str(mean(eval.Score.Value)))
+        scr = ses.query(Score.Value).filter(Score.EvaluationID == evaluation).all()
+        avg_scr = round((sum([sum(i) for i in scr])/len([sum(i) for i in scr])),1)
+        print("Sent an email to address: " + str(stud.Email) + ". The average grade of the assignment was: " + str(avg_scr))
         ses.commit()
         return
