@@ -52,11 +52,11 @@ class Task(Base):
     return "Task(TaskID='%s', Title='%s', Text='%s')" % (self.TaskID, self.Title, self.Text) 
 
 
-# class TaskQuestionLink(Base):
-#   __tablename__ = "taskquestionLink"
-
-#   QuestionID = Column(Integer, ForeignKey("QuestionID"), primary_key=True)
-#   TaskID = Column(Integer, ForeignKey("TaskID"), primary_key=True)
+#class TaskQuestionLink(Base):
+ #  __tablename__ = "TaskQuestionLinks"
+#
+#  QuestionID = Column(Integer, ForeignKey("QuestionID"), primary_key=True, nullable = False)
+#  TaskID = Column(Integer, ForeignKey("TaskID"), primary_key=True, nullable = False)
 
 class Assignment(Base):
   __tablename__ = "Assignments"
@@ -74,15 +74,16 @@ class Submission(Base):
   AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
   Answers = relationship("Answer", backref = "Submissions")
   EvaluationRequest = Column(Boolean)
+  Evaluation = relationship("Evaluation", backref = "Assignment")
   SubmissionTime = Column(DateTime)
   
 class Evaluation(Base):
   __tablename__ = "Evaluations"
   
   EvaluationID = Column(Integer, primary_key = True)
-  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
-  Assignment = relationship("Assignment", backref = "Evaluation")
+  SubmissionID = Column(ForeignKey('Submissions.SubmissionID'), nullable=False)
   Scores = relationship("Score", backref = "Evaluation")
+  EvaluationFinished = Column(Boolean)
   
   def __repr__(self):
     return "Evaluation(EvaluationID='%s')" % (self.EvaluationID)
@@ -131,20 +132,28 @@ class GradeDB:
     if (not title or not (type(title) == str)):
       print('This is not a valid title.')
       return
-    #elif ( not text or not (type(text) == str)):
-      #print('This is not a valid question.')
-      #return
+    elif ( not text or not (type(text) == str)):
+      print('This is not a valid question.')
+      return
     with self.newSession() as ses:
       nq = Question(Title = title, Text = text)
       ses.add( nq )
       ses.commit()
       return
 
+#  def addLink( self, Tid, Qid ):
+#    with self.newSession() as sess:
+#      link = TaskQuestionLink( TaskID = Tid, QuestionID = Qid )
+#      sess.add( link )
+#      sess.commit()
+#      return
+
   def addTask(self, title, text, questions):
     with self.newSession() as ses:
       qs = ses.query(Question).filter(Question.Title.in_(questions)).all()
       nt = Task(Title = title, Text = text)
-      nt.Question = qs
+      for i in range(len(qs)):
+        nt.Questions.append(qs[i])
       ses.add(nt)
       ses.commit()
       return 
@@ -171,8 +180,7 @@ class GradeDB:
     with self.newSession() as ses:
       asm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
       sbm = ses.query(Submission).filter(Submission.AssignmentID == asm.AssignmentID).one()
-      qu = ses.query(Question).filter(Question.Title == question).one()
-      ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = qu.QuestionID)
+      ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = question)
       ses.add(ans)
       ses.commit()
       return
@@ -180,19 +188,39 @@ class GradeDB:
   def commitSubmission(self, SubmissionID):
     with self.newSession() as ses:
       ses.query(Submission).filter(Submission.SubmissionID == SubmissionID).update({'EvaluationRequest': 1})
+      print( "An email will now be sent to the teacher who has to grade submission" + str(SubmissionID))
       ses.commit()
       return
 
-  def newEvaluation(self, request ):
+  def newEvaluation(self, submission ):
     with self.newSession() as ses:
-      eva= Evaluation( EvaluationRequest = request )
+      sub = ses.query(Submission).filter(Submission.SubmissionID == submission).one()
+      if( sub.EvaluationRequest == 0):
+        print("This submission does not have a request for evaluation.")
+        return
+      eva= Evaluation( SubmissionID = submission, EvaluationFinished = False )
       ses.add( eva )
       ses.commit()
       return
 
-  def addScore(self, score):
+  def addScore(self, value, answer, evaluation):
     with self.newSession() as ses:
-      sc = Score(Score = score)
+      sc = Score(Value = value, AnswerID = answer, EvaluationID = evaluation)
       ses.add(sc)
       ses.commit()
       return
+
+  def finishEvaluation( self, evaluation ):
+    with self.newSession() as ses:
+      eval = ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).one()
+      if (eval.EvaluationFinished == 1):
+        print("This evaluation is already finished and sent to the student.")
+        return
+      else:
+        ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).update({'EvaluationFinished': 1})
+        sub = ses.query(Submission).filter(Submission.SubmissionID == eval.SubmissionID).one()
+        ass = ses.query(Assignment).filter(Assignment.AssignmentID == sub.AssignmentID).one()
+        stud = ses.query(Student).filter(Student.UniversityID == ass.UniversityID).one()
+        print("Sent an email to address: " + stud.Email + ". The average grade of the assignment was: " + str(mean(eval.Score.Value)))
+        ses.commit()
+        return
