@@ -90,9 +90,11 @@ class GradeDB:
     """
     with self.newSession() as ses:
       ts = ses.query(Task).filter(Task.Title == task).one()
+      stud = ses.query(Student).filter(Student.UniversityID == student).one()
       assign = Assignment(UniversityID = student, TaskID = ts.TaskID)
       assign.Task = ts
       ses.add( assign )
+      print("Notification of new Assignment has been sent to: " + str(stud.Email))
       ses.commit()
       return
     
@@ -123,10 +125,14 @@ class GradeDB:
     with self.newSession() as ses:
       asm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
       sbm = ses.query(Submission).filter(Submission.AssignmentID == asm.AssignmentID).one()
-      ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = question)
-      ses.add(ans)
-      ses.commit()
-      return
+      if(sbm.EvaluationRequest == 1):
+        print("This submission has already an Evaluation Request associated with it.")
+        return  
+      else: 
+        ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = question)
+        ses.add(ans)
+        ses.commit()
+        return
 
   def commitSubmission(self, SubmissionID):
     """
@@ -171,11 +177,17 @@ class GradeDB:
         answer (int): integer answerID of answer that is scored
         evaluation (int): integer evaluationID of evaluation belonging to score
     """
+  
     with self.newSession() as ses:
-      sc = Score(Value = value, AnswerID = answer, EvaluationID = evaluation)
-      ses.add(sc)
-      ses.commit()
-      return
+      req = ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).one()
+      if (req.EvaluationFinished == 1):
+        print("This evaluation is already finished and sent to the student.")
+        return
+      else:
+        sc = Score(Value = value, AnswerID = answer, EvaluationID = evaluation)
+        ses.add(sc)
+        ses.commit()
+        return
 
   def commitEvaluation( self, evaluation ):
     """
