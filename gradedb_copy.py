@@ -1,12 +1,114 @@
 # python file with definitions of the main project class GradeDB with access methods to the database. (.py)
-from schema import *
+from audioop import avg
 from datetime import datetime
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Float, Table, Boolean, update, DateTime 
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base() # normally present once in a script!
+
+## classes referring to tables needed:
+# Student, Question, Task, Assignment, Submission, 
+# Answer, EvaluationRequest, Evaluation, Score
+
+class Student(Base):
+  __tablename__ = "Students"
+  
+  UniversityID = Column(Integer, primary_key = True)
+  Name = Column(String(160))
+  Email = Column(String(200))
+  #UniversityID = Column(Integer)
+  
+  def __repr__(self):
+    return "Student(UniversityID='%s', Name='%s', Email='%s')" % (self.UniversityID, self.Name, self.Email)
+
+
+TaskQuestionLink = Table('TaskQuestionLink', Base.metadata,
+    Column('QuestionID', ForeignKey('Questions.QuestionID'), primary_key=True),
+    Column('TaskID', ForeignKey('Tasks.TaskID'), primary_key=True)
+)
+
+class Question(Base):
+  __tablename__ = "Questions"
+  
+  QuestionID = Column(Integer, primary_key = True)
+  Title = Column(String(160))
+  Text = Column(String(300))
+  Answers = relationship("Answer", backref = "Question")
+  Tasks = relationship("Task", secondary = TaskQuestionLink, back_populates = "Questions")
+
+  def __repr__(self):
+    return "Question(QuestionID='%s', Title='%s', Text='%s')" % (self.QuestionID, self.Title, self.Text)
+
+class Task(Base):
+  __tablename__ = "Tasks"
+
+  TaskID = Column(Integer, primary_key = True)
+  Title = Column(String(200))
+  Text = Column(String(400))
+  Assignments = relationship( "Assignment", backref ='task')
+  Questions = relationship("Question", secondary=TaskQuestionLink, back_populates = "Tasks") 
+
+  def __repr__(self):
+    return "Task(TaskID='%s', Title='%s', Text='%s')" % (self.TaskID, self.Title, self.Text) 
+
+
+#class TaskQuestionLink(Base):
+ #  __tablename__ = "TaskQuestionLinks"
+#
+#  QuestionID = Column(Integer, ForeignKey("QuestionID"), primary_key=True, nullable = False)
+#  TaskID = Column(Integer, ForeignKey("TaskID"), primary_key=True, nullable = False)
+
+class Assignment(Base):
+  __tablename__ = "Assignments"
+  
+  AssignmentID = Column(Integer, primary_key = True)
+  UniversityID = Column(ForeignKey('Students.UniversityID'), nullable=False)
+  TaskID = Column(ForeignKey('Tasks.TaskID'), nullable=False)
+  Submissions = relationship("Submission", backref="Assignments")
+  Students = relationship("Student", backref = "Assignemtns")
+
+class Submission(Base):
+  __tablename__ = "Submissions"
+  
+  SubmissionID = Column(Integer, primary_key = True)
+  AssignmentID = Column(ForeignKey('Assignments.AssignmentID'), nullable=False)
+  Answers = relationship("Answer", backref = "Submissions")
+  EvaluationRequest = Column(Boolean)
+  Evaluation = relationship("Evaluation", backref = "Assignment")
+  SubmissionTime = Column(DateTime)
+  
+class Evaluation(Base):
+  __tablename__ = "Evaluations"
+  
+  EvaluationID = Column(Integer, primary_key = True)
+  SubmissionID = Column(ForeignKey('Submissions.SubmissionID'), nullable=False)
+  Scores = relationship("Score", backref = "Evaluation")
+  EvaluationFinished = Column(Boolean)
+  
+  def __repr__(self):
+    return "Evaluation(EvaluationID='%s')" % (self.EvaluationID)
+
+
+
+class Answer(Base):
+  __tablename__ = "Answers"
+
+  AnswerID = Column(Integer, primary_key=True)
+  Text = Column(String(400))
+  QuestionID = Column(ForeignKey("Questions.QuestionID"), nullable=False)
+  SubmissionID = Column(Integer, ForeignKey("Submissions.SubmissionID"), nullable=False)
+
+class Score(Base):
+  __tablename__ = "Scores"
+
+  ScoreID = Column(Integer, primary_key=True)
+  Value = Column(Float)
+  EvaluationID = Column(ForeignKey("Evaluations.EvaluationID"), nullable = False)
+  AnswerID = Column(ForeignKey("Answers.AnswerID"), nullable = False)
 
 class GradeDB:
   def __init__(self, fileName):
-    """ initializes the class """
     addr = "sqlite:///" + fileName
     self._engine = create_engine(addr,echo=False)
     self._sessionMaker = sessionmaker(bind=self._engine)
@@ -15,15 +117,6 @@ class GradeDB:
     return self._sessionMaker()
 
   def addStudent(self, name, email, unid):
-    """
-    Adds student to Students Table
-
-      Parameters:
-        name (str): string with name of student
-        email (str): string with email of student
-        unid (int): integer with student UniID
-
-    """
     if (not name or not (type(name) == str)):
       print('This is not a valid name.')
       return
@@ -37,17 +130,6 @@ class GradeDB:
       return 
   
   def addQuestion(self, title, text):
-    """
-    Adds question to Questions Table
-
-      Parameters:
-        title (str): string title for question
-        text (str): string question text
-
-      constraints:
-        title has to be string object
-        text has to be string object
-    """
     if (not title or not (type(title) == str)):
       print('This is not a valid title.')
       return
@@ -60,17 +142,14 @@ class GradeDB:
       ses.commit()
       return
 
+#  def addLink( self, Tid, Qid ):
+#    with self.newSession() as sess:
+#      link = TaskQuestionLink( TaskID = Tid, QuestionID = Qid )
+#      sess.add( link )
+#      sess.commit()
+#      return
 
   def addTask(self, title, text, questions):
-    """
-    Adds task to Task Table
-
-      Parameters:
-        title (str): string with Task title
-        text (str): string with overview text
-        questions: questions from Questions Table belonging to the task
-
-    """
     with self.newSession() as ses:
       qs = ses.query(Question).filter(Question.Title.in_(questions)).all()
       nt = Task(Title = title, Text = text)
@@ -81,32 +160,15 @@ class GradeDB:
       return 
     
   def addAssignment(self, student, task):
-    """
-    Adds an assignment to Assignments Table
-
-      Parameters:
-        student (int): integer UniversityID belonging to 1 student
-        task: task from Tasks table  
-
-    Notifies student that a new assignment has ben assigned to them
-    """
     with self.newSession() as ses:
       ts = ses.query(Task).filter(Task.Title == task).one()
-      stud = ses.query(Student).filter(Student.UniversityID == student).one()
       assign = Assignment(UniversityID = student, TaskID = ts.TaskID)
       assign.Task = ts
       ses.add( assign )
-      print("Notification of new Assignment has been sent to: " + str(stud.Email))
       ses.commit()
       return
     
   def newSubmission(self, student):
-    """
-    Adds submission of assignment to Submission Table
-
-      Parameters:
-        student (int): integer UniversityID belonging to 1 student
-    """
     with self.newSession() as ses:
       sm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
       sub = Submission( AssignmentID = sm.AssignmentID, EvaluationRequest = False, SubmissionTime = datetime.now())
@@ -116,37 +178,15 @@ class GradeDB:
       return
 
   def addAnswer(self, student, answer, question):
-    """
-    Adds answer to questions in assignment to Answer table
-
-      Parameters:
-        student (int): integer UniversityId of 1 student
-        answer (str): string answer to question
-        question: question from Question Table to be answered
-    
-    If evaluation was already requested for this answer a new one can not be added 
-    """
     with self.newSession() as ses:
       asm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
       sbm = ses.query(Submission).filter(Submission.AssignmentID == asm.AssignmentID).one()
-      if(sbm.EvaluationRequest == 1):
-        print("This submission already has an Evaluation Request associated with it.")
-        return  
-      else: 
-        ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = question)
-        ses.add(ans)
-        ses.commit()
-        return
+      ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = question)
+      ses.add(ans)
+      ses.commit()
+      return
 
   def commitSubmission(self, SubmissionID):
-    """
-    Student commits submission for evaluation
-
-      Parameters:
-        SubmissionID (int): integer ID of submission
-      
-      Evaluation is requested and notification is sent to teacher 
-    """
     with self.newSession() as ses:
       ses.query(Submission).filter(Submission.SubmissionID == SubmissionID).update({'EvaluationRequest': 1})
       print( "An email will now be sent to the teacher who has to grade submission" + str(SubmissionID))
@@ -154,14 +194,6 @@ class GradeDB:
       return
 
   def newEvaluation(self, submission ):
-    """
-    Adds new evaluation to Evaluation Table
-
-      Parameters: 
-        submission (int): integer submission ID
-
-      If submission has no Evaluation request pending, new Evaluation not possible
-    """
     with self.newSession() as ses:
       sub = ses.query(Submission).filter(Submission.SubmissionID == submission).one()
       if( sub.EvaluationRequest == 0):
@@ -173,39 +205,13 @@ class GradeDB:
       return
 
   def addScore(self, value, answer, evaluation):
-    """
-    Adds score to Scores table
-
-      Parameters:
-        value (float): float value of score
-        answer (int): integer answerID of answer that is scored
-        evaluation (int): integer evaluationID of evaluation belonging to score
-    
-    if an assignment was already given a score it cannot be scored again
-    """
-  
     with self.newSession() as ses:
-      req = ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).one()
-      if (req.EvaluationFinished == 1):
-        print("This evaluation is already finished and sent to the student.")
-        return
-      else:
-        sc = Score(Value = value, AnswerID = answer, EvaluationID = evaluation)
-        ses.add(sc)
-        ses.commit()
-        return
+      sc = Score(Value = value, AnswerID = answer, EvaluationID = evaluation)
+      ses.add(sc)
+      ses.commit()
+      return
 
   def commitEvaluation( self, evaluation ):
-    """
-    commits Evaluation
-
-      Parameters:
-        evaluation (int): integer evaluationID
-
-      If Evaluation was already committed, new evaluation cannot be committed
-
-      Sends notification to student that assignment was evaluated along with average score
-    """
     with self.newSession() as ses:
       eval = ses.query(Evaluation).filter(Evaluation.EvaluationID == evaluation).one()
       if (eval.EvaluationFinished == 1):
