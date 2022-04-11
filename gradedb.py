@@ -87,6 +87,8 @@ class GradeDB:
       Parameters:
         student (int): integer UniversityID belonging to 1 student
         task: task from Tasks table  
+
+    Notifies student that a new assignment has ben assigned to them
     """
     with self.newSession() as ses:
       ts = ses.query(Task).filter(Task.Title == task).one()
@@ -121,12 +123,14 @@ class GradeDB:
         student (int): integer UniversityId of 1 student
         answer (str): string answer to question
         question: question from Question Table to be answered
+    
+    If evaluation was already requested for this answer a new one can not be added 
     """
     with self.newSession() as ses:
       asm = ses.query(Assignment).filter(Assignment.UniversityID == student).one()
       sbm = ses.query(Submission).filter(Submission.AssignmentID == asm.AssignmentID).one()
       if(sbm.EvaluationRequest == 1):
-        print("This submission has already an Evaluation Request associated with it.")
+        print("This submission already has an Evaluation Request associated with it.")
         return  
       else: 
         ans = Answer(Text = answer, SubmissionID = sbm.SubmissionID, QuestionID = question)
@@ -176,6 +180,8 @@ class GradeDB:
         value (float): float value of score
         answer (int): integer answerID of answer that is scored
         evaluation (int): integer evaluationID of evaluation belonging to score
+    
+    if an assignment was already given a score it cannot be scored again
     """
   
     with self.newSession() as ses:
